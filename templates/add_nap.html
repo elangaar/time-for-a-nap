@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<form method="POST" action="">
+    {{ form.csrf_token }}
+    {{ form.stime.label }} {{ form.stime }}
+    {{ form.etime.label }} {{ form.etime }}
+    {{ form.place.label }} {{ form.place }}
+    {{ form.problems.label }} {{ form.problems }}
+    {{ form.notes.label }} {{ form.notes}}
+    <input type="submit" value="Dodaj" />
+</form>
+<a href="#">Szczegółowe</a>
+{% endblock content %}

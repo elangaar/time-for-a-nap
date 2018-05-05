@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="row">
+    <input type="button" class="btn btn-primary btn-lg" value="Drzemka dzienna" onclick="location.href = '{{ url_for("day_nap") }}'">
+    <input type="button" class="btn btn-primary btn-lg" value="Sen w nocy" onclick="location.href = '{{ url_for("night_sleep") }}'">
+</div>
+
+{% endblock content %}
