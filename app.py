@@ -9,6 +9,7 @@ from flask_wtf.csrf import CSRFProtect
 from flask_wtf import Form
 from wtforms_alchemy import ModelForm
 
+
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test1.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -61,7 +62,7 @@ class NapForm(ModelForm, Form):
 def main():
     today = datetime.date.today()
     naps = Nap.query.filter(Nap.cdate.like(f'%{today}%')).order_by(Nap.stime).all()
-    return render_template('day_nap.html',today=today, naps=naps)
+    return render_template('datetime_naps.html', today=today, naps=naps)
 
 
 @app.route('/add_nap', methods=['GET', 'POST'])
@@ -76,7 +77,7 @@ def add_nap():
 
 
 @app.route('/calendar')
-def nap_calendar():
+def calendar():
     today = datetime.date.today()
     cal = Calendar()
     mdays = cal.monthdayscalendar(today.year, today.month)
@@ -98,6 +99,30 @@ def nap_calendar():
             days.append(day)
         weeks.append(days)
     return render_template('calendar.html', mdays=mdays, naps_data=weeks)
+
+
+@app.route('/statistics')
+def statistics():
+    today = datetime.date.today()
+    cal = Calendar()
+    mweeks = cal.monthdayscalendar(today.year, today.month)
+    mdays = []
+    for week in mweeks:
+        for d in week:
+            mdays.append(d)
+    naps_number = []
+    naps_total_time = []
+    for day in mdays:
+        nap_in_day = [x for x in Nap.query.all() if x.cdate.day == day]
+        naps_number.append((day, len(nap_in_day)))
+        naps_total_time.append(
+                (day, sum([
+                    (datetime.datetime.combine(datetime.date.today(), x.etime) -
+                    datetime.datetime.combine(datetime.date.today(), x.stime)).total_seconds()/60
+                    for x in nap_in_day])
+                 )
+        )
+    return render_template('statistics.html', naps_number=naps_number, naps_total_time=naps_total_time)
 
 
 if __name__ == "__main__":

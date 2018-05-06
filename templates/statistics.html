@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Statystyki</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <style>
+        .test-border {
+            border-style: solid;
+            border-color: red;
+        }
+        .days {
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
+</head>
+<body>
+    <div class="container test-border">
+        <h3>Statystyki</h3>
+        <div class="row">
+            <canvas id="chart-number-naps"></canvas>
+            <canvas id="chart-total-time"></canvas>
+        </div>
+    </div>
+    <script>
+        var ctx_number = document.getElementById('chart-number-naps').getContext('2d');
+        var chart = new Chart(ctx_number, {
+            type: 'line',
+            data: {
+                labels: [
+                    {% for x in naps_number %}
+                        {{ x[0] }},
+                    {% endfor %}
+                ],
+                datasets: [{
+                    label: 'Ilość drzemek/dzień',
+                    fill: false,
+                    backgroundColor: 'rgb(255, 99, 132)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    data: [
+                        {% for y in naps_number %}
+                            {{ y[1] }},
+                        {% endfor %}
+                    ],
+                }]
+            },
+            options: {}
+        });
+        var ctx_total_time = document.getElementById('chart-total-time').getContext('2d');
+        var chart = new Chart(ctx_total_time, {
+            type: 'line',
+            data: {
+                labels: [
+                    {% for x in naps_total_time %}
+                        {{ x[0] }},
+                    {% endfor %}
+                ],
+                datasets: [{
+                    label: 'Łączny czas drzemek/dzień',
+                    fill: false,
+                    backgroundColor: 'rgb(255, 99, 132)',
+                    borderColor: 'rgb(2, 99, 132)',
+                    data: [
+                        {% for y in naps_total_time %}
+                            {{ y[1] }},
+                        {% endfor %}
+                    ],
+                }]
+            },
+            options: {}
+        });
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+</body>
+</html>
