@@ -9,11 +9,10 @@ from flask_wtf.csrf import CSRFProtect
 from flask_wtf import Form
 from wtforms_alchemy import ModelForm
 
+from config import Config
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test1.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = "flkjh2kj3hk43h4hh4k3h"
+app.config.from_object(Config)
 
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
@@ -36,12 +35,12 @@ class Nap(db.Model):
     cdate = db.Column(db.Date, default=datetime.datetime.today())
     stime = db.Column(
         db.Time,
-        nullable=True,
+        nullable=False,
         info={'label': 'Początek drzemki'}
     )
     etime = db.Column(
         db.Time,
-        nullable=True,
+        nullable=False,
         info={'label': 'Koniec drzemki'}
     )
     problems = db.Column(ChoiceType(CHOICES_PROBLEMS), info={'label': 'Problemy'})
@@ -62,7 +61,7 @@ class NapForm(ModelForm, Form):
 def main():
     today = datetime.date.today()
     naps = Nap.query.filter(Nap.cdate.like(f'%{today}%')).order_by(Nap.stime).all()
-    return render_template('datetime_naps.html', today=today, naps=naps)
+    return render_template('daytime_naps.html', today=today, naps=naps)
 
 
 @app.route('/add_nap', methods=['GET', 'POST'])
@@ -109,6 +108,8 @@ def statistics():
     mdays = []
     for week in mweeks:
         for d in week:
+            if d > datetime.date.today().day:
+                break
             mdays.append(d)
     naps_number = []
     naps_total_time = []
