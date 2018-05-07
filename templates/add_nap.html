@@ -2,13 +2,43 @@
 
 {% block content %}
 <form method="POST" action="">
-    {{ form.csrf_token }}
-    {{ form.stime.label }} {{ form.stime }}
-    {{ form.etime.label }} {{ form.etime }}
-    {{ form.place.label }} {{ form.place }}
-    {{ form.problems.label }} {{ form.problems }}
-    {{ form.notes.label }} {{ form.notes}}
-    <input type="submit" value="Dodaj" />
+    {{ form.hidden_tag() }}
+    <p>
+        {{ form.stime.label }} <br />
+        {{ form.stime }}
+        {% for error in form.stime.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.etime.label }} <br />
+        {{ form.etime }}
+        {% for error in form.etime.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.place.label }} <br />
+        {{ form.place }}
+        {% for error in form.place.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.problems.label }} <br />
+        {{ form.problems }}
+        {% for error in form.problems.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.notes.label }} <br />
+        {{ form.notes }}
+        {% for error in form.notes.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+    <p><input type="submit" value="Dodaj" /></p>
 </form>
 <a href="#">Szczegółowe</a>
 {% endblock content %}
