@@ -1,7 +1,9 @@
 import datetime
+
 from calendar import Calendar
 
 from flask import Flask, render_template, redirect, url_for
+
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_utils import ChoiceType
 
@@ -9,7 +11,12 @@ from flask_wtf.csrf import CSRFProtect
 from flask_wtf import Form
 from wtforms_alchemy import ModelForm
 
+from flask_security import Security, SQLAlchemyUserDatastore, \
+    UserMixin, RoleMixin, login_required
+from flask_login import LoginManager, current_user
+
 from config import Config
+
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -17,6 +24,34 @@ app.config.from_object(Config)
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
 csrf.init_app(app)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+
+@login_manager.user_loader
+def load_user(id):
+    return User.query.get(id)
+
+
+roles_users = db.Table('roles_users',
+                        db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
+                        db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
+
+
+class Role(db.Model, RoleMixin):
+    id = db.Column(db.Integer(), primary_key=True)
+    name = db.Column(db.String(80), unique=True)
+
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer(), primary_key=True)
+    email = db.Column(db.String(255), unique=True)
+    password = db.Column(db.String(100))
+    active = db.Column(db.Boolean())
+    roles = db.relationship('Role', secondary=roles_users,
+                            backref=db.backref('users', lazy='dynamic'))
+    naps = db.relationship('Nap', backref='user', lazy=True)
 
 
 class Nap(db.Model):
@@ -46,11 +81,14 @@ class Nap(db.Model):
     problems = db.Column(ChoiceType(CHOICES_PROBLEMS), info={'label': 'Problemy'})
     place = db.Column(ChoiceType(CHOICES_PLACES), info={'label': 'Miejsce'})
     notes = db.Column(db.UnicodeText, nullable=True, info={'label': 'Notatki'})
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
         return f'<Nap {self.id}>'
 
 
+user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+security = Security(app, user_datastore)
 
 class NapForm(ModelForm, Form):
     class Meta:
@@ -58,17 +96,19 @@ class NapForm(ModelForm, Form):
 
 
 @app.route('/', methods = ['GET'])
+@login_required
 def main():
     today = datetime.date.today()
-    naps = Nap.query.filter(Nap.cdate.like(f'%{today}%')).order_by(Nap.stime).all()
+    naps = Nap.query.filter(Nap.cdate.like(f'%{today}%')).filter_by(user_id=current_user.id).order_by(Nap.stime).all()
     return render_template('daytime_naps.html', today=today, naps=naps)
 
 
 @app.route('/add_nap', methods=['GET', 'POST'])
+@login_required
 def add_nap():
     form = NapForm()
     if form.validate_on_submit():
-        nap = Nap(stime=form.stime.data, etime=form.etime.data, problems=form.problems.data, place=form.place.data)
+        nap = Nap(stime=form.stime.data, etime=form.etime.data, problems=form.problems.data, place=form.place.data, user_id=current_user.id)
         db.session.add(nap)
         db.session.commit()
         return redirect(url_for('main'))
@@ -76,11 +116,12 @@ def add_nap():
 
 
 @app.route('/calendar')
+@login_required
 def calendar():
     today = datetime.date.today()
     cal = Calendar()
     mdays = cal.monthdayscalendar(today.year, today.month)
-    naps = Nap.query.filter_by().order_by(Nap.stime).all()
+    naps = Nap.query.filter_by(user_id=current_user.id).order_by(Nap.stime).all()
     weeks = []
     for week in mdays:
         days = []
@@ -101,6 +142,7 @@ def calendar():
 
 
 @app.route('/statistics')
+@login_required
 def statistics():
     today = datetime.date.today()
     cal = Calendar()
@@ -114,7 +156,7 @@ def statistics():
     naps_number = []
     naps_total_time = []
     for day in mdays:
-        nap_in_day = [x for x in Nap.query.all() if x.cdate.day == day]
+        nap_in_day = [x for x in Nap.query.filter_by(user_id=current_user.id).all() if x.cdate.day == day]
         naps_number.append((day, len(nap_in_day)))
         naps_total_time.append(
                 (day, sum([
