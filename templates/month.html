@@ -1,0 +1,42 @@
+<div class="mt-5">
+    <h1 id="h1-title">{{ month_year.month}} {{ month_year.year }}</h1>
+    <div class="row">
+        <div class="col-sm days border border-info"><b>Pn</b></div>
+        <div class="col-sm days border border-info"><b>Wt</b></div>
+        <div class="col-sm days border border-info"><b>Śr</b></div>
+        <div class="col-sm days border border-info"><b>Czw</b></div>
+        <div class="col-sm days border border-info"><b>Pt</b></div>
+        <div class="col-sm days border border-info"><b>So</b></div>
+        <div class="col-sm days border border-info"><b><span style="color: red;">Nd</span></b></div>
+    </div>
+    {% for week in naps_data %}
+    <div class="row">
+
+
+        {% for day in week %}
+        {% if day[0].day == today.day and day[0].month == today.month and day[0].year == today.year %}
+        <div id={{ day[0].day }} class="col-sm days border border-info bg-info monthday">
+            {% elif day[0] == 0 %}
+            <div id=0 class="col-sm days border border-info monthday">
+                {% else %}
+                <div id={{ day[0].day }} class="col-sm days border border-info monthday">
+                    {% endif %}
+                    {% if day[0] == 0 %}
+                    <p></p>
+                    {% else %}
+                    {% if day == week[-1] %}
+                    <p><b><span style="color: red;">{{ day[0].day }}</span></b></p>
+                    {% else %}
+                    <p><b>{{ day[0].day }}</b></p>
+                    {% endif %}
+                    {% for n in day[1] %}
+                    {{ n }}
+                    {% endfor %}
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+
+    </div>
+</div>
