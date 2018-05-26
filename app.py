@@ -115,8 +115,16 @@ class Nap(db.Model):
         return f'<Nap {self.id}>'
 
 
+class NightNap(db.Model):
+    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    date = db.Column(db.Date, default=datetime.date.today(), unique=True, info={'label': 'Data'})
+    wake_up = db.Column(db.Time, info={'label': 'Godzina rannego obudzenia'})
+    fall_asleep = db.Column(db.Time, info={'label': 'Godzina uśnięica na noc'})
+
+
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(app, user_datastore)
+
 
 class NapForm(ModelForm, Form):
     class Meta:
@@ -167,20 +175,36 @@ def month_calendar():
             'naps': []
         }
         naps = Nap.query.filter_by(user_id=current_user.id).filter(Nap.cdate == date).order_by(Nap.stime).all()
+        night_sleep = NightNap.query.filter(NightNap.date==date).first()
+        try:
+            wake_up = night_sleep.wake_up
+            fall_asleep = night_sleep.fall_asleep
+        except AttributeError:
+            wake_up = None
+            fall_asleep = None
+        naps_amount = Nap.query.filter(Nap.cdate == date).count()
+        naps_duration = datetime.timedelta(0)
         for i in range(len(naps)):
             duration = datetime.datetime.combine(datetime.date.min, naps[i].etime) \
                 - datetime.datetime.combine(datetime.date.min, naps[i].stime)
+            naps_duration += duration
             duration_string = ':'.join(str(duration).split(':')[:2])
             data['naps'].append({
-                'date': naps[i].cdate.strftime('%d-%m-%Y'),
-                'stime': naps[i].stime.strftime('%H:%M'),
-                'etime': naps[i].etime.strftime('%H:%M'),
+                'date': naps[i].cdate,
+                'stime': naps[i].stime,
+                'etime': naps[i].etime,
                 'problems': naps[i].problems.value,
                 'place': naps[i].place.value,
                 'notes': naps[i].notes,
                 'duration': duration_string
-            });
-        return render_template('day_modal.html', data=data)
+            })
+        summary = {
+            'wake_up': wake_up,
+            'fall_asleep': fall_asleep,
+            'naps_amount': naps_amount,
+            'naps_duration': ':'.join(str(naps_duration).split(':')[:2])
+        }
+        return render_template('day_modal.html', data=data, summary=summary)
     else:
         today = datetime.date.today()
         if request.args.get('date') is not None:

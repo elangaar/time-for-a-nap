@@ -7,10 +7,10 @@
     <table>
         <h5 class="center">Drzemka {{ loop.index }}</h5>
         <tr>
-            <td><b>Początek drzemki: </b></td><td>{{ n.stime }}</td>
+            <td><b>Początek drzemki: </b></td><td>{{ n.stime.strftime('%H:%M') }}</td>
         </tr>
         <tr>
-            <td><b>Koniec drzemki: </b></td><td>{{ n.etime }}</td>
+            <td><b>Koniec drzemki: </b></td><td>{{ n.etime.strftime('%H:%M') }}</td>
         </tr>
         <tr>
             <td><b>Czas trwania drzemki:</b></td><td>{{ n.duration }}</td>
@@ -32,6 +32,22 @@
 {% else %}
     <h4>Brak drzemek</h4>
 {% endif %}
+<hr />
+<table>
+    <h5 class="center">Podsumowanie dnia</h5>
+    <tr>
+        <td><b>Godzina rannej pobudki:</b></td><td>{{ summary.wake_up.strftime('%H:%M') if summary.wake_up != None else '-' }}</td>
+    </tr>
+    <tr>
+        <td><b>Godzina uśnięcia wieczorem:</b></td><td>{{ summary.fall_asleep.strftime('%H:%M')  if summary.fall_asleep != None else '-' }}</td>
+    </tr>
+    <tr>
+        <td><b>Ilość drzemek:</b></td><td>{{ summary.naps_amount }}</td>
+    </tr>
+    <tr>
+        <td><b>Łączny czas trwania drzemek:</b></td><td>{{ summary.naps_duration }}</td>
+    </tr>
+</table>
 </div>
 <div class="modal-footer">
     <button type="button" class="btn btn-warning" data-dismiss="modal">Zamknij</button>
