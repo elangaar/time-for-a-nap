@@ -80,6 +80,7 @@ class User(db.Model, UserMixin):
     roles = db.relationship('Role', secondary=roles_users,
                             backref=db.backref('users', lazy='dynamic'))
     naps = db.relationship('Nap', backref='user', lazy=True)
+    night_naps = db.relationship('NightNap', backref='user', lazy=True)
 
 
 class Nap(db.Model):
@@ -117,9 +118,10 @@ class Nap(db.Model):
 
 class NightNap(db.Model):
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    date = db.Column(db.Date, default=datetime.date.today(), unique=True, info={'label': 'Data'})
+    date = db.Column(db.Date, default=datetime.date.today(), nullable=False, unique=True, info={'label': 'Data'})
     wake_up = db.Column(db.Time, info={'label': 'Godzina rannego obudzenia'})
     fall_asleep = db.Column(db.Time, info={'label': 'Godzina uśnięica na noc'})
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
@@ -129,6 +131,11 @@ security = Security(app, user_datastore)
 class NapForm(ModelForm, Form):
     class Meta:
         model = Nap
+
+
+class NightNapForm(ModelForm, Form):
+    class Meta:
+        model = NightNap
 
 
 @app.route('/', methods = ['GET'])
@@ -149,6 +156,19 @@ def add_nap():
         db.session.commit()
         return redirect(url_for('daytime_naps'))
     return render_template('add_nap.html', form=form)
+
+
+@app.route('/add_nightnap', methods=['GET', 'POST'])
+@login_required
+def add_nightnap():
+    form = NightNapForm()
+    if form.validate_on_submit():
+        nap = NightNap(date=form.date.data, wake_up=form.wake_up.data, fall_asleep=form.fall_asleep.data, user_id=current_user.id)
+        db.session.add(nap)
+        db.session.commit()
+        return redirect(url_for('daytime_naps'))
+    return render_template('add_night_nap.html', form=form)
+
 
 def get_day_month_year(date):
     day = date.day
@@ -175,14 +195,14 @@ def month_calendar():
             'naps': []
         }
         naps = Nap.query.filter_by(user_id=current_user.id).filter(Nap.cdate == date).order_by(Nap.stime).all()
-        night_sleep = NightNap.query.filter(NightNap.date==date).first()
+        night_sleep = NightNap.query.filter_by(user_id=current_user.id).filter(NightNap.date==date).first()
         try:
             wake_up = night_sleep.wake_up
             fall_asleep = night_sleep.fall_asleep
         except AttributeError:
             wake_up = None
             fall_asleep = None
-        naps_amount = Nap.query.filter(Nap.cdate == date).count()
+        naps_amount = Nap.query.filter_by(user_id=current_user.id).filter(Nap.cdate == date).count()
         naps_duration = datetime.timedelta(0)
         for i in range(len(naps)):
             duration = datetime.datetime.combine(datetime.date.min, naps[i].etime) \

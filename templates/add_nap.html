@@ -38,7 +38,10 @@
             <span style="color: red;">[{{ error }}]</span>
         {% endfor %}
     </p>
-    <p><input type="submit" value="Dodaj" /></p>
+    <p>
+        <a class="btn btn-secondary m-1" href="{{ url_for('daytime_naps')}}">Anuluj</a>
+        <input type="submit" class="btn btn-primary m-1" value="Dodaj" />
+    </p>
 </form>
 <a href="#">Szczegółowe</a>
 {% endblock content %}

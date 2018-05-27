@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<form method="POST" action="">
+    {{ form.hidden_tag() }}
+    <p>
+        {{ form.date.label }} <br />
+        {{ form.date }}
+        {% for error in form.date.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.wake_up.label }} <br />
+        {{ form.wake_up }}
+        {% for error in form.wake_up.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.fall_asleep.label }} <br />
+        {{ form.fall_asleep }}
+        {% for error in form.fall_asleep.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+
+    <p>
+        <a class="btn btn-secondary m-1" href="{{ url_for('daytime_naps')}}">Anuluj</a>
+        <input type="submit" class="btn btn-primary m-1" value="Dodaj" />
+    </p>
+</form>
+<a href="#">Szczegółowe</a>
+{% endblock content %}
