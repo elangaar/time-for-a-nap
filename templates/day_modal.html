@@ -22,7 +22,7 @@
             <td><b>Problemy: </b></td><td>{{ n.problems }}</td>
         </tr>
         <tr>
-            <td><b>Uwagi: </b></td><td>{{ n.notes or '-'}}</td>
+            <td><b>Uwagi: </b></td><td><i>{{ n.notes or '-'}}</i></td>
         </tr>
     </table>
         {% if not loop.last %}

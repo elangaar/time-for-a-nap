@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<form method="POST" action="">
+    {{ form.hidden_tag() }}
+    <p>
+        {{ form.cdate.label }} <br />
+        {{ form.cdate}}
+        {% for error in form.cdate.errors %}
+        <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.stime.label }} <br />
+        {{ form.stime }}
+        {% for error in form.stime.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.etime.label }} <br />
+        {{ form.etime }}
+        {% for error in form.etime.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.place.label }} <br />
+        {{ form.place }}
+        {% for error in form.place.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.problems.label }} <br />
+        {{ form.problems }}
+        {% for error in form.problems.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.notes.label }} <br />
+        {{ form.notes}}
+        {% for error in form.notes.errors %}
+        <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+    <p>
+        <a class="btn btn-secondary m-1" href="{{ url_for('daytime_naps')}}">Anuluj</a>
+        <input type="submit" class="btn btn-primary m-1" value="Dodaj" />
+    </p>
+</form>
+<a href="#">Szczegółowe</a>
+{% endblock content %}

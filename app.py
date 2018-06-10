@@ -1,5 +1,4 @@
 import datetime
-import json
 
 from dateutil import relativedelta
 
@@ -8,7 +7,7 @@ from calendar import Calendar
 import calendar
 from functools import partial
 
-from flask import Flask, render_template, redirect, url_for, request, jsonify
+from flask import Flask, render_template, url_for, request, make_response, redirect
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_utils import ChoiceType
@@ -24,6 +23,8 @@ from flask_login import LoginManager, current_user
 from flask_principal import identity_loaded, Permission, RoleNeed, UserNeed
 
 from config import Config
+from forms import AddChildForm
+
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -34,7 +35,6 @@ csrf.init_app(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
-
 
 @login_manager.user_loader
 def load_user(id):
@@ -72,15 +72,32 @@ class Role(db.Model, RoleMixin):
     name = db.Column(db.String(80), unique=True)
 
 
+children_users = db.Table('children_users',
+                          db.Column('user_id', db.Integer(), db.ForeignKey('user.id'), primary_key=True),
+                          db.Column('child_id', db.Integer(), db.ForeignKey('child.id'), primary_key=True))
+
+
 class User(db.Model, UserMixin):
-    id = db.Column(db.Integer(), primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True)
     password = db.Column(db.String(100))
-    active = db.Column(db.Boolean())
+    active = db.Column(db.Boolean)
     roles = db.relationship('Role', secondary=roles_users,
                             backref=db.backref('users', lazy='dynamic'))
-    naps = db.relationship('Nap', backref='user', lazy=True)
-    night_naps = db.relationship('NightNap', backref='user', lazy=True)
+    children = db.relationship('Child', secondary=children_users,
+                               backref=db.backref('users', lazy='dynamic'))
+
+
+class Child(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(80), nullable=False)
+    last_name = db.Column(db.String(80))
+    date_of_birth = db.Column(db.Date)
+    naps = db.relationship('Nap', backref='child', lazy=True)
+    night_naps = db.relationship('NightNap', backref='child', lazy=True)
+
+    def __repr__(self):
+        return f'<Child {self.first_name} {self.last_name}>'
 
 
 class Nap(db.Model):
@@ -109,8 +126,8 @@ class Nap(db.Model):
     )
     problems = db.Column(ChoiceType(CHOICES_PROBLEMS), info={'label': 'Problemy'})
     place = db.Column(ChoiceType(CHOICES_PLACES), info={'label': 'Miejsce'})
-    notes = db.Column(db.UnicodeText, nullable=True, info={'label': 'Notatki'})
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    notes = db.Column(db.UnicodeText, nullable=True, default=None, info={'label': 'Notatki'})
+    child_id = db.Column(db.Integer, db.ForeignKey('child.id'), nullable=False)
 
     def __repr__(self):
         return f'<Nap {self.id}>'
@@ -121,7 +138,7 @@ class NightNap(db.Model):
     date = db.Column(db.Date, default=datetime.date.today(), nullable=False, unique=True, info={'label': 'Data'})
     wake_up = db.Column(db.Time, info={'label': 'Godzina rannego obudzenia'})
     fall_asleep = db.Column(db.Time, info={'label': 'Godzina uśnięica na noc'})
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    child_id = db.Column(db.Integer, db.ForeignKey('child.id'), nullable=False)
 
 
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
@@ -138,12 +155,48 @@ class NightNapForm(ModelForm, Form):
         model = NightNap
 
 
-@app.route('/', methods = ['GET'])
+@app.route('/')
+@login_required
+def start():
+    if request.cookies.get('child'):
+        return redirect(url_for('daytime_naps'))
+    return redirect(url_for('children'))
+
+
+@app.route('/children')
+@login_required
+def children():
+    children = User.query.filter(User.id == current_user.id).first().children
+    return render_template('children.html', children=children)
+
+
+@app.route('/set_child/<child_id>', methods=['GET', 'POST'])
+def set_child(child_id):
+    resp = make_response(redirect(url_for('daytime_naps')))
+    resp.set_cookie('child', child_id)
+    return resp
+
+
+@app.route('/daytime_naps', methods=['GET'])
 @login_required
 def daytime_naps():
+    if request.cookies.get('child') not in [str(child.id) for child in current_user.children]:
+        return redirect(url_for('children'))
     today = datetime.date.today()
-    naps = Nap.query.filter(Nap.cdate.like(f'%{today}%')).filter_by(user_id=current_user.id).order_by(Nap.stime).all()
+    naps = Nap.query.filter(Nap.cdate.like(f'%{today}%')).filter(Nap.child_id == request.cookies.get('child')).order_by(Nap.stime).all()
     return render_template('daytime_naps.html', today=today, naps=naps)
+
+
+@app.route('/add_child', methods=['GET', 'POST'])
+def add_child():
+    form = AddChildForm()
+    if form.validate_on_submit():
+        child = Child(first_name=form.first_name.data, last_name=form.last_name.data, date_of_birth=form.date_of_birth.data)
+        current_user.children.append(child)
+        db.session.add(child)
+        db.session.commit()
+        return redirect(url_for('children'))
+    return render_template('add_child.html', form=form)
 
 
 @app.route('/add_nap', methods=['GET', 'POST'])
@@ -151,7 +204,7 @@ def daytime_naps():
 def add_nap():
     form = NapForm()
     if form.validate_on_submit():
-        nap = Nap(stime=form.stime.data, etime=form.etime.data, problems=form.problems.data, place=form.place.data, notes=form.notes.data, user_id=current_user.id)
+        nap = Nap(cdate=form.cdate.data, stime=form.stime.data, etime=form.etime.data, problems=form.problems.data, place=form.place.data, notes=form.notes.data, child_id=request.cookies.get('child'))
         db.session.add(nap)
         db.session.commit()
         return redirect(url_for('daytime_naps'))
@@ -163,7 +216,7 @@ def add_nap():
 def add_nightnap():
     form = NightNapForm()
     if form.validate_on_submit():
-        nap = NightNap(date=form.date.data, wake_up=form.wake_up.data, fall_asleep=form.fall_asleep.data, user_id=current_user.id)
+        nap = NightNap(date=form.date.data, wake_up=form.wake_up.data, fall_asleep=form.fall_asleep.data, child_id=request.cookies.get('child'))
         db.session.add(nap)
         db.session.commit()
         return redirect(url_for('daytime_naps'))
@@ -194,15 +247,15 @@ def month_calendar():
             'date': date_month_full,
             'naps': []
         }
-        naps = Nap.query.filter_by(user_id=current_user.id).filter(Nap.cdate == date).order_by(Nap.stime).all()
-        night_sleep = NightNap.query.filter_by(user_id=current_user.id).filter(NightNap.date==date).first()
+        naps = Nap.query.filter(Nap.child_id == request.cookies.get('child')).filter(Nap.cdate == date).order_by(Nap.stime).all()
+        night_sleep = NightNap.query.filter(NightNap.child_id==request.cookies.get('child')).filter(NightNap.date==date).first()
         try:
             wake_up = night_sleep.wake_up
             fall_asleep = night_sleep.fall_asleep
         except AttributeError:
             wake_up = None
             fall_asleep = None
-        naps_amount = Nap.query.filter_by(user_id=current_user.id).filter(Nap.cdate == date).count()
+        naps_amount = Nap.query.filter(Nap.child_id==request.cookies.get('child')).filter(Nap.cdate == date).count()
         naps_duration = datetime.timedelta(0)
         for i in range(len(naps)):
             duration = datetime.datetime.combine(datetime.date.min, naps[i].etime) \
@@ -238,7 +291,7 @@ def month_calendar():
         cal = Calendar()
         month_year = get_day_month_year(date)
         mdays = cal.monthdayscalendar(date.year, date.month)
-        naps = Nap.query.filter_by(user_id=current_user.id).filter(func.extract('month', Nap.cdate) == date.month).order_by(Nap.stime).all()
+        naps = Nap.query.filter(Nap.child_id == request.cookies.get('child')).filter(func.extract('month', Nap.cdate) == date.month).order_by(Nap.stime).all()
         weeks = []
         for week in mdays:
             days = []
@@ -282,7 +335,7 @@ def statistics():
     naps_number = []
     naps_total_time = []
     for day in mdays:
-        nap_in_day = [x for x in Nap.query.filter_by(user_id=current_user.id).all() if x.cdate.day == day]
+        nap_in_day = Nap.query.filter(Nap.child_id==request.cookies.get('child')).filter(func.extract('day', Nap.cdate) == day).all()
         naps_number.append((day, len(nap_in_day)))
         naps_total_time.append(
                 (day, sum([
