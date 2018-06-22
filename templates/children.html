@@ -4,15 +4,17 @@
 {% if children %}
 
 <div>
+    <h3>Wybierz dziecko:</h3>
 {% for child in children %}
     <p><a href="{{ url_for('set_child', child_id=child.id) }}">{{ child.first_name }} {{ child.last_name }} </a></p>
 
 {% endfor %}
+    <h5> lub <a href="{{ url_for('add_child') }}">dodaj kolejne</a></h5>
 </div>
 {% else %}
     <div>
         <h3>Brak dzieci</h3>
-        <p>Aby dodać dziecko, kliknij tutaj</p>
+        <p>Aby dodać dziecko, <a href="{{ url_for('add_child') }}">kliknij tutaj</a></p>
     </div>
 {% endif %}
 

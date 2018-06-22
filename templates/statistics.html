@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Statystyki</title>
+    <title>Statystyki drzemek</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
@@ -11,22 +11,20 @@
             border-style: solid;
             border-color: red;
         }
-        .days {
-        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
 </head>
 <body>
-    <div class="container test-border">
-        <h3>Statystyki</h3>
-        <div class="row">
-            <canvas id="chart-number-naps"></canvas>
-            <canvas id="chart-total-time"></canvas>
+    <div class="container">
+        <h1 class="mt-5">Statystyki drzemek</h1>
+        <div class="row justify-content-center">
+            <canvas id="chart-number-naps" class="mb-5 mt-3 w-75" style="max-height: 20em;"></canvas>
+            <canvas id="chart-total-time" class="mt-5 w-75" style="max-height: 20em;"></canvas>
         </div>
     </div>
     <script>
-        var ctx_number = document.getElementById('chart-number-naps').getContext('2d');
-        var chart = new Chart(ctx_number, {
+        var ch_number = document.getElementById('chart-number-naps').getContext('2d');
+        var chart_number = new Chart(ch_number, {
             type: 'line',
             data: {
                 labels: [
@@ -35,7 +33,6 @@
                     {% endfor %}
                 ],
                 datasets: [{
-                    label: 'Ilość drzemek/dzień',
                     fill: false,
                     backgroundColor: 'rgb(255, 99, 132)',
                     borderColor: 'rgb(255, 99, 132)',
@@ -46,10 +43,32 @@
                     ],
                 }]
             },
-            options: {}
+            options: {
+                title: {
+                    display: true,
+                    text: 'Ilość drzemek na dzień',
+                    fontSize: 24,
+                    fontFamily: 'Helvetica'
+                },
+                legend: {
+                    display: false
+                },
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            fontSize: 18
+                        }
+                    }],
+                    xAxes: [{
+                        ticks: {
+                            fontSize: 18
+                        }
+                    }]
+                }
+            }
         });
-        var ctx_total_time = document.getElementById('chart-total-time').getContext('2d');
-        var chart = new Chart(ctx_total_time, {
+        var ch_total_time = document.getElementById('chart-total-time').getContext('2d');
+        var chart = new Chart(ch_total_time, {
             type: 'line',
             data: {
                 labels: [
@@ -69,7 +88,29 @@
                     ],
                 }]
             },
-            options: {}
+            options: {
+                title: {
+                    display: true,
+                    text: 'Łączny czas spania w dzień',
+                    fontSize: 24,
+                    fontFamily: 'Helvetica'
+                },
+                legend: {
+                    display: false
+                },
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            fontSize: 18
+                        }
+                    }],
+                    xAxes: [{
+                        ticks: {
+                            fontSize: 18
+                        }
+                    }]
+                }
+            }
         });
     </script>
 

@@ -14,8 +14,6 @@ from sqlalchemy_utils import ChoiceType
 from sqlalchemy import func
 
 from flask_wtf.csrf import CSRFProtect
-from flask_wtf import Form
-from wtforms_alchemy import ModelForm
 
 from flask_security import Security, SQLAlchemyUserDatastore, \
     UserMixin, RoleMixin, login_required
@@ -24,6 +22,8 @@ from flask_principal import identity_loaded, Permission, RoleNeed, UserNeed
 
 from config import Config
 from forms import AddChildForm
+from forms import AddNapForm
+from forms import AddNightNapForm
 
 
 app = Flask(__name__)
@@ -145,16 +145,6 @@ user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(app, user_datastore)
 
 
-class NapForm(ModelForm, Form):
-    class Meta:
-        model = Nap
-
-
-class NightNapForm(ModelForm, Form):
-    class Meta:
-        model = NightNap
-
-
 @app.route('/')
 @login_required
 def start():
@@ -202,7 +192,7 @@ def add_child():
 @app.route('/add_nap', methods=['GET', 'POST'])
 @login_required
 def add_nap():
-    form = NapForm()
+    form = AddNapForm()
     if form.validate_on_submit():
         nap = Nap(cdate=form.cdate.data, stime=form.stime.data, etime=form.etime.data, problems=form.problems.data, place=form.place.data, notes=form.notes.data, child_id=request.cookies.get('child'))
         db.session.add(nap)
@@ -211,16 +201,39 @@ def add_nap():
     return render_template('add_nap.html', form=form)
 
 
+@app.route('/add_nap_detailed', methods=['GET', 'POST'])
+def add_nap_detailed():
+    form = AddNapForm()
+    if form.validate_on_submit():
+        nap = Nap(cdate=form.cdate.data, stime=form.stime.data, etime=form.etime.data, problems=form.problems.data, place=form.place.data, notes=form.notes.data, child_id=request.cookies.get('child'))
+        db.session.add(nap)
+        db.session.commit()
+        return redirect(url_for('daytime_naps'))
+    return render_template('add_nap_detailed.html', form=form)
+
+
 @app.route('/add_nightnap', methods=['GET', 'POST'])
 @login_required
 def add_nightnap():
-    form = NightNapForm()
+    form = AddNightNapForm()
     if form.validate_on_submit():
-        nap = NightNap(date=form.date.data, wake_up=form.wake_up.data, fall_asleep=form.fall_asleep.data, child_id=request.cookies.get('child'))
+        nap = NightNap(date=datetime.date.today(), wake_up=form.wake_up.data, fall_asleep=form.fall_asleep.data, child_id=request.cookies.get('child'))
         db.session.add(nap)
         db.session.commit()
         return redirect(url_for('daytime_naps'))
     return render_template('add_night_nap.html', form=form)
+
+
+@app.route('/add_nightnap_detailed', methods=['GET', 'POST'])
+@login_required
+def add_nightnap_detailed():
+    form = AddNightNapForm()
+    if form.validate_on_submit():
+        nap = NightNap(date=form.date.data, wake_up=form.wake_up.data, fall_asleep=form.fall_asleep.data, notes=form.notes.data, child_id=request.cookies.get('child'))
+        db.session.add(nap)
+        db.session.commit()
+        return redirect(url_for('daytime_naps'))
+    return render_template('add_night_nap_detailed.html', form=form)
 
 
 def get_day_month_year(date):
